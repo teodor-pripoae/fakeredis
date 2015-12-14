@@ -9,6 +9,7 @@ require "fakeredis/sorted_set_store"
 require "fakeredis/transaction_commands"
 require "fakeredis/zset"
 require "fakeredis/bitop_command"
+require "fakeredis/version"
 
 class Redis
   module Connection
@@ -36,15 +37,15 @@ class Redis
       def self.reset_all_databases
         @databases = nil
       end
-      
+
       def self.channels
         @channels ||= Hash.new {|h,k| h[k] = [] }
       end
-      
+
       def self.reset_all_channels
         @channels = nil
       end
-      
+
       def self.connect(options = {})
         new(options)
       end
@@ -73,7 +74,7 @@ class Redis
       def data
         find_database
       end
-      
+
       def replies
         @replies ||= []
       end
@@ -1145,32 +1146,32 @@ class Redis
         data[out] = SortedSetUnionStore.new(args_handler, data).call
         data[out].size
       end
-      
+
       def subscribe(*channels)
         raise_argument_error('subscribe') if channels.empty?()
-        
+
         #Create messages for all data from the channels
-        channel_replies = channels.map do |channel| 
+        channel_replies = channels.map do |channel|
           self.class.channels[channel].slice!(0..-1).map!{|v| ["message", channel, v]}
         end
         channel_replies.flatten!(1)
         channel_replies.compact!()
-        
+
         #Put messages into the replies for the future
         channels.each_with_index do |channel,index|
           replies << ["subscribe", channel, index+1]
         end
         replies.push(*channel_replies)
-        
+
         #Add unsubscribe message to stop blocking (see https://github.com/redis/redis-rb/blob/v3.2.1/lib/redis/subscribe.rb#L38)
         replies.push(self.unsubscribe())
-        
+
         replies.pop() #Last reply will be pushed back on
       end
-      
+
       def psubscribe(*patterns)
         raise_argument_error('psubscribe') if patterns.empty?()
-        
+
         #Create messages for all data from the channels
         channel_replies = self.class.channels.keys.map do |channel|
           pattern = patterns.find{|p| File.fnmatch(p, channel) }
@@ -1180,24 +1181,24 @@ class Redis
         end
         channel_replies.flatten!(1)
         channel_replies.compact!()
-        
+
         #Put messages into the replies for the future
         patterns.each_with_index do |pattern,index|
           replies << ["psubscribe", pattern, index+1]
         end
         replies.push(*channel_replies)
-        
+
         #Add unsubscribe to stop blocking
         replies.push(self.punsubscribe())
-        
+
         replies.pop() #Last reply will be pushed back on
       end
-      
+
       def publish(channel, message)
         self.class.channels[channel] << message
         0 #Just fake number of subscribers
       end
-      
+
       def unsubscribe(*channels)
         if channels.empty?()
           replies << ["unsubscribe", nil, 0]
@@ -1208,7 +1209,7 @@ class Redis
         end
         replies.pop() #Last reply will be pushed back on
       end
-      
+
       def punsubscribe(*patterns)
         if patterns.empty?()
           replies << ["punsubscribe", nil, 0]
