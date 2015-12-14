@@ -3,7 +3,7 @@ $:.push File.expand_path("../lib", __FILE__)
 require "fakeredis/version"
 
 Gem::Specification.new do |s|
-  s.name        = "fakeredis"
+  s.name        = "kuende-fakeredis"
   s.version     = FakeRedis::VERSION
   s.platform    = Gem::Platform::RUBY
   s.authors     = ["Guillermo Iguaran"]
